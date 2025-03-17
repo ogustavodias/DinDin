@@ -48,7 +48,7 @@ public class AuthController {
   }
 
   @PostMapping(path = "/register")
-  public ResponseEntity<UserResponseDTO> register(@RequestBody UserRegisterRequestDTO body) {
+  public ResponseEntity<UserResponseDTO> register(@RequestBody @Valid UserRegisterRequestDTO body) {
     Optional<User> user = this.repository.findByEmail(body.email());
 
     if (user.isPresent())
