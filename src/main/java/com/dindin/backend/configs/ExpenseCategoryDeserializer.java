@@ -1,9 +1,10 @@
-package com.dindin.backend.enums.expense;
+package com.dindin.backend.configs;
 
 import java.io.IOException;
 import java.util.Optional;
 import java.util.Arrays;
 
+import com.dindin.backend.enums.ExpenseCategory;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;

@@ -1,5 +1,6 @@
-package com.dindin.backend.enums.expense;
+package com.dindin.backend.enums;
 
+import com.dindin.backend.configs.ExpenseCategoryDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonDeserialize(using = ExpenseCategoryDeserializer.class)

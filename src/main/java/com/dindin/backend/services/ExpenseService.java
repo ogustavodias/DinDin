@@ -26,6 +26,7 @@ public class ExpenseService {
         .category(dto.category())
         .description(dto.description())
         .amount(dto.amount())
+        .date(dto.date())
         .user(user)
         .build();
     return eRepository.save(persistEntity);

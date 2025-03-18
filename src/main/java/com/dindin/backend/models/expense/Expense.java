@@ -1,11 +1,13 @@
 package com.dindin.backend.models.expense;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
-import com.dindin.backend.enums.expense.ExpenseCategory;
+import com.dindin.backend.enums.ExpenseCategory;
 import com.dindin.backend.models.user.User;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -34,6 +36,9 @@ public class Expense {
   private ExpenseCategory category;
   private String description;
   private BigDecimal amount;
+
+  @Column(name = "expense_date")
+  private LocalDate date;
 
   @ManyToOne
   @JoinColumn(name = "user_id")

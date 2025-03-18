@@ -1,6 +1,6 @@
 package com.dindin.backend.validators;
 
-import com.dindin.backend.enums.expense.ExpenseCategory;
+import com.dindin.backend.enums.ExpenseCategory;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
