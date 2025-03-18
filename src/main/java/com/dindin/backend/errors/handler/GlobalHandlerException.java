@@ -11,19 +11,21 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import com.dindin.backend.errors.AlreadyRegisteredException;
 import com.dindin.backend.errors.LoginException;
 
+import jakarta.persistence.EntityNotFoundException;
+
 @ControllerAdvice
 public class GlobalHandlerException {
 
   private static final Logger logger = LoggerFactory.getLogger(GlobalHandlerException.class);
 
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<Void> globalHandler(Exception e) {
+  public ResponseEntity<Void> handleOthersExceptions(Exception e) {
     logger.error("Unexpected error occurred: Exception. " + e.getMessage());
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
   }
 
   @ExceptionHandler(AlreadyRegisteredException.class)
-  public ResponseEntity<Void> alreadyRegisteredHandler(AlreadyRegisteredException e) {
+  public ResponseEntity<Void> handleAlreadyRegisteredExceptions(AlreadyRegisteredException e) {
     logger.error(
         String.format("Unexpected error occurred: %s. %s",
             e.getClass().getSimpleName(),
@@ -32,7 +34,7 @@ public class GlobalHandlerException {
   }
 
   @ExceptionHandler(LoginException.class)
-  public ResponseEntity<Void> loginHandler(LoginException e) {
+  public ResponseEntity<Void> handleLoginExceptions(LoginException e) {
     logger.error(
         String.format("Unexpected error occurred: %s. %s",
             e.getClass().getSimpleName(),
@@ -47,5 +49,14 @@ public class GlobalHandlerException {
             e.getClass().getSimpleName(),
             e.getAllErrors().size()));
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+  }
+
+  @ExceptionHandler(EntityNotFoundException.class)
+  public ResponseEntity<Void> handleEntityNotFoundExceptions(EntityNotFoundException e) {
+    logger.error(
+        String.format("Unexpected error occurred: %s. %s",
+            e.getClass().getSimpleName(),
+            e.getMessage()));
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
   }
 }
