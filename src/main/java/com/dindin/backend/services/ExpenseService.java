@@ -1,5 +1,7 @@
 package com.dindin.backend.services;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,8 +22,10 @@ public class ExpenseService {
   @Autowired
   private UserRepository uRepository;
 
-  public Expense registerExpense(ExpenseDTO dto) {
-    User user = uRepository.findById(dto.userId()).orElseThrow(() -> new EntityNotFoundException("User not found."));
+  public ExpenseDTO registerExpense(ExpenseDTO dto) {
+    User user = uRepository.findById(dto.userId())
+        .orElseThrow(() -> new EntityNotFoundException("User not found."));
+
     Expense persistEntity = Expense.builder()
         .category(dto.category())
         .description(dto.description())
@@ -29,6 +33,15 @@ public class ExpenseService {
         .date(dto.date())
         .user(user)
         .build();
-    return eRepository.save(persistEntity);
+
+    return ExpenseDTO.fromPersistEntity(eRepository.save(persistEntity));
   }
+
+  public List<ExpenseDTO> getUserExpenses(Long userId) {
+    User user = uRepository.findById(userId)
+        .orElseThrow(() -> new EntityNotFoundException("User not found."));
+        
+    return user.getExpenses().stream().map(ExpenseDTO::fromPersistEntity).toList();
+  }
+
 }
