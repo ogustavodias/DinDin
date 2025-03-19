@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import com.dindin.backend.errors.AlreadyRegisteredException;
+import com.dindin.backend.errors.InvalidPeriodException;
 import com.dindin.backend.errors.LoginException;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -48,6 +49,15 @@ public class GlobalHandlerException {
         String.format("Unexpected error occurred: %s. %s fields with error",
             e.getClass().getSimpleName(),
             e.getAllErrors().size()));
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+  }
+
+  @ExceptionHandler(InvalidPeriodException.class)
+  public ResponseEntity<Void> handleInvalidPeriodExceptions(InvalidPeriodException e) {
+    logger.error(
+        String.format("Unexpected error occurred: %s. %s",
+            e.getClass().getSimpleName(),
+            e.getMessage()));
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
   }
 
