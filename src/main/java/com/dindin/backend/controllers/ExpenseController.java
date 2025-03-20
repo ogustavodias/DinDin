@@ -6,7 +6,9 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -32,18 +34,44 @@ public class ExpenseController {
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }
 
-  @GetMapping("/get/{userId}")
-  public ResponseEntity<List<ExpenseDTO>> getUserExpenses(@PathVariable Long userId) {
-    List<ExpenseDTO> response = service.getUserExpenses(userId);
+  @GetMapping()
+  public ResponseEntity<List<ExpenseDTO>> getAllExpenses() {
+    List<ExpenseDTO> response = service.getAllExpenses();
     return ResponseEntity.status(HttpStatus.OK).body(response);
   }
 
-  @GetMapping("/get/period/{userId}")
-  public ResponseEntity<List<ExpenseDTO>> getUserExpensesInPeriod(
-      @PathVariable Long userId,
+  @GetMapping("/{id}")
+  public ResponseEntity<ExpenseDTO> getExpenseById(@PathVariable Long id) {
+    ExpenseDTO response = service.getExpenseById(id);
+    return ResponseEntity.status(HttpStatus.OK).body(response);
+  }
+
+  @PatchMapping("/{id}")
+  public ResponseEntity<ExpenseDTO> editExpenseById(
+      @PathVariable Long id,
+      @RequestBody @Valid ExpenseDTO dto) {
+    ExpenseDTO response = service.editExpenseById(id, dto);
+    return ResponseEntity.status(HttpStatus.OK).body(response);
+  }
+
+  @DeleteMapping("/{id}")
+  public ResponseEntity<ExpenseDTO> deleteExpenseById(@PathVariable Long id) {
+    ExpenseDTO response = service.deleteExpenseById(id);
+    return ResponseEntity.status(HttpStatus.OK).body(response);
+  }
+
+  @GetMapping("/by-user/{id}")
+  public ResponseEntity<List<ExpenseDTO>> getExpensesByUserId(@PathVariable Long id) {
+    List<ExpenseDTO> response = service.getExpensesByUserId(id);
+    return ResponseEntity.status(HttpStatus.OK).body(response);
+  }
+
+  @GetMapping("/by-user/in-period/{id}")
+  public ResponseEntity<List<ExpenseDTO>> getExpensesByUserIdInPeriod(
+      @PathVariable Long id,
       @RequestParam LocalDate from,
       @RequestParam LocalDate to) {
-    List<ExpenseDTO> response = service.getUserExpensesInPeriod(userId, from, to);
+    List<ExpenseDTO> response = service.getExpensesByUserIdInPeriod(id, from, to);
     return ResponseEntity.status(HttpStatus.OK).body(response);
   }
 

@@ -20,13 +20,13 @@ import jakarta.persistence.EntityNotFoundException;
 public class ExpenseService {
 
   @Autowired
-  private ExpenseRepository eRepository;
+  private ExpenseRepository expenseRepository;
 
   @Autowired
-  private UserRepository uRepository;
+  private UserRepository userRepository;
 
   public ExpenseDTO registerExpense(ExpenseDTO dto) {
-    User user = uRepository.findById(dto.userId())
+    User user = userRepository.findById(dto.userId())
         .orElseThrow(() -> new EntityNotFoundException("User not found."));
 
     Expense persistEntity = Expense.builder()
@@ -37,18 +37,56 @@ public class ExpenseService {
         .user(user)
         .build();
 
-    return ExpenseDTO.fromPersistEntity(eRepository.save(persistEntity));
+    return ExpenseDTO.fromPersistEntity(expenseRepository.save(persistEntity));
   }
 
-  public List<ExpenseDTO> getUserExpenses(Long userId) {
-    User user = uRepository.findById(userId)
+  public ExpenseDTO getExpenseById(Long id) {
+    Expense expense = expenseRepository.findById(id)
+        .orElseThrow(() -> new EntityNotFoundException("Expense not found"));
+
+    return ExpenseDTO.fromPersistEntity(expense);
+  }
+
+  public List<ExpenseDTO> getAllExpenses() {
+    return expenseRepository.findAll()
+        .stream()
+        .map(ExpenseDTO::fromPersistEntity)
+        .toList();
+  }
+
+  public ExpenseDTO editExpenseById(Long id, ExpenseDTO dto) {
+    Expense toEdit = expenseRepository.findById(id)
+        .orElseThrow(() -> new EntityNotFoundException("Expense not found."));
+
+    Expense edited = Expense.builder()
+        .id(id)
+        .category(dto.category())
+        .description(dto.description())
+        .amount(dto.amount())
+        .date(dto.date())
+        .user(toEdit.getUser())
+        .build();
+
+    return ExpenseDTO.fromPersistEntity(expenseRepository.save(edited));
+  }
+
+  public ExpenseDTO deleteExpenseById(Long id) {
+    Expense toDelete = expenseRepository.findById(id)
+        .orElseThrow(() -> new EntityNotFoundException("Expense not found"));
+
+    expenseRepository.delete(toDelete);
+    return ExpenseDTO.fromPersistEntity(toDelete);
+  }
+
+  public List<ExpenseDTO> getExpensesByUserId(Long id) {
+    User user = userRepository.findById(id)
         .orElseThrow(() -> new EntityNotFoundException("User not found."));
 
     return user.getExpenses().stream().map(ExpenseDTO::fromPersistEntity).toList();
   }
 
-  public List<ExpenseDTO> getUserExpensesInPeriod(Long userId, LocalDate from, LocalDate to) {
-    Optional<User> user = uRepository.findById(userId);
+  public List<ExpenseDTO> getExpensesByUserIdInPeriod(Long id, LocalDate from, LocalDate to) {
+    Optional<User> user = userRepository.findById(id);
 
     if (user.isEmpty())
       throw new EntityNotFoundException("User not found.");
@@ -59,9 +97,10 @@ public class ExpenseService {
     if (from.isAfter(to))
       throw new InvalidPeriodException("Invalid period: 'from' (" + from + ") is after 'to' (" + to + ").");
 
-    return eRepository.findByUserIdInPeriod(userId, from, to)
+    return expenseRepository.findByUserIdInPeriod(id, from, to)
         .stream()
         .map(ExpenseDTO::fromPersistEntity)
         .toList();
   }
+
 }
