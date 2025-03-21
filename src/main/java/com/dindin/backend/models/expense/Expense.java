@@ -34,8 +34,8 @@ public class Expense {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
   private ExpenseCategory category;
-  private String description;
   private BigDecimal amount;
+  private String description;
 
   @Column(name = "expense_date")
   private LocalDate date;

@@ -7,7 +7,9 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.dindin.backend.dto.ExpenseDTO;
+import com.dindin.backend.dto.ExpenseInsertRequestDTO;
+import com.dindin.backend.dto.ExpenseRequestDTO;
+import com.dindin.backend.dto.ExpenseResponseDTO;
 import com.dindin.backend.errors.InvalidPeriodException;
 import com.dindin.backend.models.expense.Expense;
 import com.dindin.backend.models.user.User;
@@ -25,67 +27,61 @@ public class ExpenseService {
   @Autowired
   private UserRepository userRepository;
 
-  public ExpenseDTO registerExpense(ExpenseDTO dto) {
-    User user = userRepository.findById(dto.userId())
+  public ExpenseResponseDTO registerExpense(ExpenseInsertRequestDTO dto) {
+    User user = userRepository.findById(dto.getUserId())
         .orElseThrow(() -> new EntityNotFoundException("User not found."));
 
-    Expense persistEntity = Expense.builder()
-        .category(dto.category())
-        .description(dto.description())
-        .amount(dto.amount())
-        .date(dto.date())
+    Expense toPersist = ExpenseRequestDTO
+        .toPersitEntity(dto)
         .user(user)
         .build();
 
-    return ExpenseDTO.fromPersistEntity(expenseRepository.save(persistEntity));
+    return ExpenseResponseDTO.fromPersistEntity(expenseRepository.save(toPersist));
   }
 
-  public ExpenseDTO getExpenseById(Long id) {
+  public ExpenseResponseDTO getExpenseById(Long id) {
     Expense expense = expenseRepository.findById(id)
         .orElseThrow(() -> new EntityNotFoundException("Expense not found"));
 
-    return ExpenseDTO.fromPersistEntity(expense);
+    return ExpenseResponseDTO.fromPersistEntity(expense);
   }
 
-  public List<ExpenseDTO> getAllExpenses() {
+  public List<ExpenseResponseDTO> getAllExpenses() {
     return expenseRepository.findAll()
         .stream()
-        .map(ExpenseDTO::fromPersistEntity)
+        .map(ExpenseResponseDTO::fromPersistEntity)
         .toList();
   }
 
-  public ExpenseDTO editExpenseById(Long id, ExpenseDTO dto) {
+  public ExpenseResponseDTO editExpenseById(Long id, ExpenseRequestDTO dto) {
     Expense toEdit = expenseRepository.findById(id)
         .orElseThrow(() -> new EntityNotFoundException("Expense not found."));
 
-    Expense edited = Expense.builder()
+    Expense edited = ExpenseRequestDTO
+        .toPersitEntity(dto)
         .id(id)
-        .category(dto.category())
-        .description(dto.description())
-        .amount(dto.amount())
-        .date(dto.date())
         .user(toEdit.getUser())
         .build();
 
-    return ExpenseDTO.fromPersistEntity(expenseRepository.save(edited));
+    return ExpenseResponseDTO.fromPersistEntity(expenseRepository.save(edited));
   }
 
-  public ExpenseDTO deleteExpenseById(Long id) {
+  public ExpenseResponseDTO deleteExpenseById(Long id) {
     Expense toDelete = expenseRepository.findById(id)
         .orElseThrow(() -> new EntityNotFoundException("Expense not found"));
 
     expenseRepository.delete(toDelete);
-    return ExpenseDTO.fromPersistEntity(toDelete);
+    return ExpenseResponseDTO.fromPersistEntity(toDelete);
   }
 
-  public List<ExpenseDTO> getExpensesByUserId(Long id) {
+  public List<ExpenseResponseDTO> getExpensesByUserId(Long id) {
     User user = userRepository.findById(id)
         .orElseThrow(() -> new EntityNotFoundException("User not found."));
 
-    return user.getExpenses().stream().map(ExpenseDTO::fromPersistEntity).toList();
+    return user.getExpenses().stream().map(ExpenseResponseDTO::fromPersistEntity).toList();
   }
 
-  public List<ExpenseDTO> getExpensesByUserIdInPeriod(Long id, LocalDate from, LocalDate to) {
+  public List<ExpenseResponseDTO> getExpensesByUserIdInPeriod(Long id, LocalDate from, LocalDate to) {
     Optional<User> user = userRepository.findById(id);
 
     if (user.isEmpty())
@@ -99,7 +95,7 @@ public class ExpenseService {
 
     return expenseRepository.findByUserIdInPeriod(id, from, to)
         .stream()
-        .map(ExpenseDTO::fromPersistEntity)
+        .map(ExpenseResponseDTO::fromPersistEntity)
         .toList();
   }
 
