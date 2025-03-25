@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -17,11 +18,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dindin.backend.dto.ExpenseRequestDTO;
-import com.dindin.backend.dto.ExpenseInsertRequestDTO;
 import com.dindin.backend.dto.ExpenseResponseDTO;
 import com.dindin.backend.dto.ListOfExpenseResponse;
 import com.dindin.backend.services.ExpenseService;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 
 @RestController
@@ -32,51 +33,53 @@ public class ExpenseController {
   private ExpenseService service;
 
   @PostMapping("/register")
-  public ResponseEntity<ExpenseResponseDTO> registerExpense(@RequestBody @Valid ExpenseInsertRequestDTO request) {
-    ExpenseResponseDTO response = service.registerExpense(request);
+  @SecurityRequirement(name = "bearerAuth")
+  public ResponseEntity<ExpenseResponseDTO> registerExpense(
+      Authentication auth,
+      @RequestBody @Valid ExpenseRequestDTO request) {
+    ExpenseResponseDTO response = service.registerExpense(auth, request);
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }
 
   @GetMapping()
-  public ResponseEntity<ListOfExpenseResponse> getAllExpenses() {
-    List<ExpenseResponseDTO> expenses = service.getAllExpenses();
+  @SecurityRequirement(name = "bearerAuth")
+  public ResponseEntity<ListOfExpenseResponse> getExpensesOfUser(Authentication auth) {
+    List<ExpenseResponseDTO> expenses = service.getExpensesOfUser(auth);
     ListOfExpenseResponse response = ListOfExpenseResponse.builder().expenses(expenses).build();
     return ResponseEntity.status(HttpStatus.OK).body(response);
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<ExpenseResponseDTO> getExpenseById(@PathVariable Long id) {
-    ExpenseResponseDTO response = service.getExpenseById(id);
+  @SecurityRequirement(name = "bearerAuth")
+  public ResponseEntity<ExpenseResponseDTO> getExpenseOfUserById(Authentication auth, @PathVariable Long id) {
+    ExpenseResponseDTO response = service.getExpenseOfUserById(auth, id);
     return ResponseEntity.status(HttpStatus.OK).body(response);
   }
 
   @PatchMapping("/{id}")
-  public ResponseEntity<ExpenseResponseDTO> editExpenseById(
+  @SecurityRequirement(name = "bearerAuth")
+  public ResponseEntity<ExpenseResponseDTO> editExpenseOfUserById(
+      Authentication auth,
       @PathVariable Long id,
       @RequestBody @Valid ExpenseRequestDTO dto) {
-    ExpenseResponseDTO response = service.editExpenseById(id, dto);
+    ExpenseResponseDTO response = service.editExpenseOfUserById(auth, id, dto);
     return ResponseEntity.status(HttpStatus.OK).body(response);
   }
 
   @DeleteMapping("/{id}")
-  public ResponseEntity<ExpenseResponseDTO> deleteExpenseById(@PathVariable Long id) {
-    ExpenseResponseDTO response = service.deleteExpenseById(id);
+  @SecurityRequirement(name = "bearerAuth")
+  public ResponseEntity<ExpenseResponseDTO> deleteExpenseOfUserById(Authentication auth, @PathVariable Long id) {
+    ExpenseResponseDTO response = service.deleteExpenseOfUserById(auth, id);
     return ResponseEntity.status(HttpStatus.OK).body(response);
   }
 
-  @GetMapping("/by-user/{id}")
-  public ResponseEntity<ListOfExpenseResponse> getExpensesByUserId(@PathVariable Long id) {
-    List<ExpenseResponseDTO> expenses = service.getExpensesByUserId(id);
-    ListOfExpenseResponse response = ListOfExpenseResponse.builder().expenses(expenses).build();
-    return ResponseEntity.status(HttpStatus.OK).body(response);
-  }
-
-  @GetMapping("/by-user/in-period/{id}")
-  public ResponseEntity<ListOfExpenseResponse> getExpensesByUserIdInPeriod(
-      @PathVariable Long id,
+  @GetMapping("/in-period/{id}")
+  @SecurityRequirement(name = "bearerAuth")
+  public ResponseEntity<ListOfExpenseResponse> getExpensesOfUserInPeriod(
+      Authentication auth,
       @RequestParam LocalDate from,
       @RequestParam LocalDate to) {
-    List<ExpenseResponseDTO> expenses = service.getExpensesByUserIdInPeriod(id, from, to);
+    List<ExpenseResponseDTO> expenses = service.getExpensesOfUserInPeriod(auth, from, to);
     ListOfExpenseResponse response = ListOfExpenseResponse.builder().expenses(expenses).build();
     return ResponseEntity.status(HttpStatus.OK).body(response);
   }

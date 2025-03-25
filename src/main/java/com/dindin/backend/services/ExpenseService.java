@@ -2,19 +2,18 @@ package com.dindin.backend.services;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
-import com.dindin.backend.dto.ExpenseInsertRequestDTO;
 import com.dindin.backend.dto.ExpenseRequestDTO;
 import com.dindin.backend.dto.ExpenseResponseDTO;
 import com.dindin.backend.errors.InvalidPeriodException;
+import com.dindin.backend.errors.LoginException;
 import com.dindin.backend.models.expense.Expense;
 import com.dindin.backend.models.user.User;
 import com.dindin.backend.repositories.ExpenseRepository;
-import com.dindin.backend.repositories.UserRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 
@@ -24,12 +23,8 @@ public class ExpenseService {
   @Autowired
   private ExpenseRepository expenseRepository;
 
-  @Autowired
-  private UserRepository userRepository;
-
-  public ExpenseResponseDTO registerExpense(ExpenseInsertRequestDTO dto) {
-    User user = userRepository.findById(dto.getUserId())
-        .orElseThrow(() -> new EntityNotFoundException("User not found."));
+  public ExpenseResponseDTO registerExpense(Authentication auth, ExpenseRequestDTO dto) {
+    User user = (User) auth.getPrincipal();
 
     Expense toPersist = ExpenseRequestDTO
         .toPersitEntity(dto)
@@ -39,53 +34,20 @@ public class ExpenseService {
     return ExpenseResponseDTO.fromPersistEntity(expenseRepository.save(toPersist));
   }
 
-  public ExpenseResponseDTO getExpenseById(Long id) {
-    Expense expense = expenseRepository.findById(id)
-        .orElseThrow(() -> new EntityNotFoundException("Expense not found"));
+  public List<ExpenseResponseDTO> getExpensesOfUser(Authentication auth) {
+    User user = (User) auth.getPrincipal();
 
-    return ExpenseResponseDTO.fromPersistEntity(expense);
+    List<Expense> expenses = expenseRepository.findByUser(user);
+
+    return expenses.stream().map(ExpenseResponseDTO::fromPersistEntity).toList();
   }
 
-  public List<ExpenseResponseDTO> getAllExpenses() {
-    return expenseRepository.findAll()
-        .stream()
-        .map(ExpenseResponseDTO::fromPersistEntity)
-        .toList();
-  }
+  public List<ExpenseResponseDTO> getExpensesOfUserInPeriod(
+      Authentication auth,
+      LocalDate from,
+      LocalDate to) {
 
-  public ExpenseResponseDTO editExpenseById(Long id, ExpenseRequestDTO dto) {
-    Expense toEdit = expenseRepository.findById(id)
-        .orElseThrow(() -> new EntityNotFoundException("Expense not found."));
-
-    Expense edited = ExpenseRequestDTO
-        .toPersitEntity(dto)
-        .id(id)
-        .user(toEdit.getUser())
-        .build();
-
-    return ExpenseResponseDTO.fromPersistEntity(expenseRepository.save(edited));
-  }
-
-  public ExpenseResponseDTO deleteExpenseById(Long id) {
-    Expense toDelete = expenseRepository.findById(id)
-        .orElseThrow(() -> new EntityNotFoundException("Expense not found"));
-
-    expenseRepository.delete(toDelete);
-    return ExpenseResponseDTO.fromPersistEntity(toDelete);
-  }
-
-  public List<ExpenseResponseDTO> getExpensesByUserId(Long id) {
-    User user = userRepository.findById(id)
-        .orElseThrow(() -> new EntityNotFoundException("User not found."));
-
-    return user.getExpenses().stream().map(ExpenseResponseDTO::fromPersistEntity).toList();
-  }
-
-  public List<ExpenseResponseDTO> getExpensesByUserIdInPeriod(Long id, LocalDate from, LocalDate to) {
-    Optional<User> user = userRepository.findById(id);
-
-    if (user.isEmpty())
-      throw new EntityNotFoundException("User not found.");
+    User user = (User) auth.getPrincipal();
 
     if (from == null || to == null)
       throw new IllegalArgumentException("Both 'from' and 'to' dates must be provided.");
@@ -93,10 +55,53 @@ public class ExpenseService {
     if (from.isAfter(to))
       throw new InvalidPeriodException("Invalid period: 'from' (" + from + ") is after 'to' (" + to + ").");
 
-    return expenseRepository.findByUserIdInPeriod(id, from, to)
+    return expenseRepository.findByUserIdInPeriod(user.getId(), from, to)
         .stream()
         .map(ExpenseResponseDTO::fromPersistEntity)
         .toList();
+  }
+
+  public ExpenseResponseDTO getExpenseOfUserById(Authentication auth, Long id) {
+    User user = (User) auth.getPrincipal();
+
+    Expense expense = expenseRepository.findById(id)
+        .orElseThrow(() -> new EntityNotFoundException("Expense not found"));
+
+    if (user.getId() != expense.getUser().getId())
+      throw new LoginException("Unauthorized");
+
+    return ExpenseResponseDTO.fromPersistEntity(expense);
+  }
+
+  public ExpenseResponseDTO editExpenseOfUserById(Authentication auth, Long id, ExpenseRequestDTO dto) {
+    User user = (User) auth.getPrincipal();
+
+    Expense expense = expenseRepository.findById(id)
+        .orElseThrow(() -> new EntityNotFoundException("Expense not found."));
+
+    if (user.getId() != expense.getUser().getId())
+      throw new LoginException("Unauthorized");
+
+    expense = ExpenseRequestDTO
+        .toPersitEntity(dto)
+        .id(id)
+        .user(expense.getUser())
+        .build();
+
+    return ExpenseResponseDTO.fromPersistEntity(expenseRepository.save(expense));
+  }
+
+  public ExpenseResponseDTO deleteExpenseOfUserById(Authentication auth, Long id) {
+    User user = (User) auth.getPrincipal();
+
+    Expense expense = expenseRepository.findById(id)
+        .orElseThrow(() -> new EntityNotFoundException("Expense not found"));
+
+    if (user.getId() != expense.getUser().getId())
+      throw new LoginException("Unauthorized");
+
+    expenseRepository.delete(expense);
+    return ExpenseResponseDTO.fromPersistEntity(expense);
   }
 
 }
