@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.dindin.backend.dto.ExpenseRequestDTO;
 import com.dindin.backend.dto.ExpenseResponseDTO;
@@ -23,8 +24,26 @@ public class ExpenseService {
   @Autowired
   private ExpenseRepository expenseRepository;
 
+  private User getAuthenticatedUser(Authentication auth) {
+    return (User) auth.getPrincipal();
+  }
+
+  private void validateUserPermission(User user, Expense expense) {
+    if (user.getId() != expense.getUser().getId())
+      throw new LoginException("Unauthorized");
+  }
+
+  private void validatePeriod(LocalDate from, LocalDate to) {
+    if (from == null || to == null)
+      throw new IllegalArgumentException("Both 'from' and 'to' dates must be provided.");
+
+    if (from.isAfter(to))
+      throw new InvalidPeriodException("Invalid period: 'from' (" + from + ") is after 'to' (" + to + ").");
+  }
+
+  @Transactional
   public ExpenseResponseDTO registerExpense(Authentication auth, ExpenseRequestDTO dto) {
-    User user = (User) auth.getPrincipal();
+    User user = getAuthenticatedUser(auth);
 
     Expense toPersist = ExpenseRequestDTO
         .toPersitEntity(dto)
@@ -35,7 +54,7 @@ public class ExpenseService {
   }
 
   public List<ExpenseResponseDTO> getExpensesOfUser(Authentication auth) {
-    User user = (User) auth.getPrincipal();
+    User user = getAuthenticatedUser(auth);
 
     List<Expense> expenses = expenseRepository.findByUser(user);
 
@@ -47,13 +66,9 @@ public class ExpenseService {
       LocalDate from,
       LocalDate to) {
 
-    User user = (User) auth.getPrincipal();
+    User user = getAuthenticatedUser(auth);
 
-    if (from == null || to == null)
-      throw new IllegalArgumentException("Both 'from' and 'to' dates must be provided.");
-
-    if (from.isAfter(to))
-      throw new InvalidPeriodException("Invalid period: 'from' (" + from + ") is after 'to' (" + to + ").");
+    validatePeriod(from, to);
 
     return expenseRepository.findByUserIdInPeriod(user.getId(), from, to)
         .stream()
@@ -62,25 +77,24 @@ public class ExpenseService {
   }
 
   public ExpenseResponseDTO getExpenseOfUserById(Authentication auth, Long id) {
-    User user = (User) auth.getPrincipal();
+    User user = getAuthenticatedUser(auth);
 
     Expense expense = expenseRepository.findById(id)
         .orElseThrow(() -> new EntityNotFoundException("Expense not found"));
 
-    if (user.getId() != expense.getUser().getId())
-      throw new LoginException("Unauthorized");
+    validateUserPermission(user, expense);
 
     return ExpenseResponseDTO.fromPersistEntity(expense);
   }
 
+  @Transactional
   public ExpenseResponseDTO editExpenseOfUserById(Authentication auth, Long id, ExpenseRequestDTO dto) {
-    User user = (User) auth.getPrincipal();
+    User user = getAuthenticatedUser(auth);
 
     Expense expense = expenseRepository.findById(id)
         .orElseThrow(() -> new EntityNotFoundException("Expense not found."));
 
-    if (user.getId() != expense.getUser().getId())
-      throw new LoginException("Unauthorized");
+    validateUserPermission(user, expense);
 
     expense = ExpenseRequestDTO
         .toPersitEntity(dto)
@@ -91,14 +105,14 @@ public class ExpenseService {
     return ExpenseResponseDTO.fromPersistEntity(expenseRepository.save(expense));
   }
 
+  @Transactional
   public ExpenseResponseDTO deleteExpenseOfUserById(Authentication auth, Long id) {
-    User user = (User) auth.getPrincipal();
+    User user = getAuthenticatedUser(auth);
 
     Expense expense = expenseRepository.findById(id)
         .orElseThrow(() -> new EntityNotFoundException("Expense not found"));
 
-    if (user.getId() != expense.getUser().getId())
-      throw new LoginException("Unauthorized");
+    validateUserPermission(user, expense);
 
     expenseRepository.delete(expense);
     return ExpenseResponseDTO.fromPersistEntity(expense);
