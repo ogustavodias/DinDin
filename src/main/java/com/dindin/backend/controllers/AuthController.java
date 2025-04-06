@@ -46,7 +46,7 @@ public class AuthController {
 
     // Else
     return ResponseEntity.status(HttpStatus.OK)
-        .body(new UserResponseDTO(user.get().getName(), this.tokenService.generateToken(user.get())));
+        .body(UserResponseDTO.fromEntity(user.get(), this.tokenService.generateToken(user.get())));
   }
 
   @PostMapping(path = "/register")
@@ -63,7 +63,7 @@ public class AuthController {
         .password(passwordEncoder.encode(body.password()))
         .build());
 
-    UserResponseDTO response = new UserResponseDTO(newUser.getName(), this.tokenService.generateToken(newUser));
+    UserResponseDTO response = UserResponseDTO.fromEntity(newUser, this.tokenService.generateToken(newUser));
     return ResponseEntity.status(HttpStatus.OK).body(response);
   }
 
